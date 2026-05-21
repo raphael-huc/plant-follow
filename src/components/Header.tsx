@@ -11,17 +11,21 @@ export function Header() {
     navigate("/");
   };
 
+  const displayName = [user?.first_name, user?.last_name]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <header className="sticky top-0 z-10 w-full border-b border-stone-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 sm:px-6">
+      <div className="flex w-full items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
           <Leaf className="h-5 w-5 text-emerald-600" aria-hidden="true" />
           <span className="text-base font-semibold tracking-tight">Plants</span>
         </div>
         <div className="flex items-center gap-3">
-          {user?.email && (
+          {displayName && (
             <span className="hidden text-sm text-stone-600 sm:inline">
-              {user.email}
+              {displayName}
             </span>
           )}
           <button

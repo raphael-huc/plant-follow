@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Leaf, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertCircle, ChevronRight, Leaf, RefreshCw } from "lucide-react";
 import { getPlants } from "../api/plants";
 import type { Plant } from "../types/schema";
 import { Header } from "../components/Header";
@@ -109,12 +110,23 @@ export function Home() {
         {plants && plants.length > 0 && (
           <ul className="divide-y divide-stone-200 overflow-hidden rounded-lg border border-stone-200 bg-white">
             {plants.map((plant) => (
-              <li
-                key={plant.id}
-                className="flex items-center gap-3 px-4 py-3 transition hover:bg-stone-50"
-              >
-                <Leaf className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-                <span className="text-sm text-stone-800">{plant.name}</span>
+              <li key={plant.id}>
+                <Link
+                  to={`/plant/${plant.id}`}
+                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-stone-50"
+                >
+                  <Leaf
+                    className="h-4 w-4 text-emerald-600"
+                    aria-hidden="true"
+                  />
+                  <span className="flex-1 text-sm text-stone-800">
+                    {plant.name}
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 text-stone-400"
+                    aria-hidden="true"
+                  />
+                </Link>
               </li>
             ))}
           </ul>

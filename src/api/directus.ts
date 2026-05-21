@@ -31,7 +31,7 @@ export class DirectusClient {
       );
     }
     this.sdk = createDirectus<Schema>(url)
-      .with(authentication("cookie", { credentials: "include" }))
+      .with(authentication("session", { credentials: "include" }))
       .with(rest({ credentials: "include" }));
   }
 
@@ -49,20 +49,20 @@ export class DirectusClient {
     return await this.sdk.login(
       { email, password },
       {
-        mode: "cookie",
+        mode: "session",
       },
     );
   }
 
   async logout(): Promise<void> {
     await this.sdk.logout({
-      mode: "cookie",
+      mode: "session",
     });
   }
 
   async refresh(): Promise<AuthenticationData> {
     if (this.refreshPromise) return this.refreshPromise;
-    this.refreshPromise = this.sdk.refresh({ mode: "cookie" });
+    this.refreshPromise = this.sdk.refresh({ mode: "session" });
     try {
       return await this.refreshPromise;
     } finally {
@@ -76,5 +76,10 @@ export class DirectusClient {
 
   async setToken(token: string | null) {
     await this.sdk.setToken(token);
+  }
+
+  ssoLoginUrl(provider: string, redirect: string): string {
+    const url = import.meta.env.VITE_DIRECTUS_URL;
+    return `${url}/auth/login/${provider}?redirect=${encodeURIComponent(redirect)}`;
   }
 }

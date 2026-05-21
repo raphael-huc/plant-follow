@@ -13,11 +13,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("authenticated");
   }, []);
 
+  const refreshSession = useCallback(async () => {
+    const client = DirectusClient.getInstance();
+    try {
+      await client.refresh();
+      await loadUser();
+    } catch (err) {
+      setUser(null);
+      setStatus("unauthenticated");
+      throw err;
+    }
+  }, [loadUser]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const client = DirectusClient.getInstance();
       try {
+        const client = DirectusClient.getInstance();
         await client.refresh();
         if (cancelled) return;
         await loadUser();
@@ -53,7 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ status, user, login, logout }}>
+    <AuthContext.Provider
+      value={{ status, user, login, logout, refreshSession }}
+    >
       {children}
     </AuthContext.Provider>
   );
