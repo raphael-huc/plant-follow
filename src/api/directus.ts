@@ -4,19 +4,9 @@ import {
   authentication,
   AuthenticationClient,
   RestClient,
-  readItems,
-  readMe,
   AuthenticationData,
 } from "@directus/sdk";
-import type { Plant, Schema } from "../types/schema";
-
-export type { Plant, Schema };
-
-export interface Me {
-  email: string | null;
-  first_name: string | null;
-  last_name: string | null;
-}
+import type { Schema } from "../types/schema";
 
 /**
  * Singleton wrapper for Directus SDK
@@ -86,15 +76,5 @@ export class DirectusClient {
 
   async setToken(token: string | null) {
     await this.sdk.setToken(token);
-  }
-
-  async getPlants(): Promise<Plant[]> {
-    return await this.sdk.request(readItems("plant"));
-  }
-
-  async getMe(): Promise<Me> {
-    return await this.sdk.request(
-      readMe({ fields: ["email", "first_name", "last_name"] }),
-    );
   }
 }

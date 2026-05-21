@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Me } from "../api/directus";
+import type { Me } from "../api/me";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Leaf, RefreshCw } from "lucide-react";
-import { DirectusClient, type Plant } from "../api/directus";
+import { getPlants } from "../api/plants";
+import type { Plant } from "../types/schema";
 import { Header } from "../components/Header";
 
 export function Home() {
@@ -11,9 +12,8 @@ export function Home() {
   const fetchPlants = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const client = DirectusClient.getInstance();
     try {
-      const response = await client.getPlants();
+      const response = await getPlants();
       setPlants(response ?? []);
     } catch (err) {
       setError(

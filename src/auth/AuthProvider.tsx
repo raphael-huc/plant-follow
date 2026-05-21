@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { DirectusClient, type Me } from "../api/directus";
+import { DirectusClient } from "../api/directus";
+import { getMe, type Me } from "../api/me";
 import { AuthContext, type AuthStatus } from "./AuthContext";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -7,7 +8,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Me | null>(null);
 
   const loadUser = useCallback(async () => {
-    const me = await DirectusClient.getInstance().getMe();
+    const me = await getMe();
     setUser(me);
     setStatus("authenticated");
   }, []);
