@@ -4,10 +4,19 @@ import {
   authentication,
   AuthenticationClient,
   RestClient,
-  readItems, GraphqlClient,
-  AuthenticationData, graphql,
+  readItems,
+  readMe,
+  AuthenticationData,
 } from "@directus/sdk";
+import type { Plant, Schema } from "../types/schema";
 
+export type { Plant, Schema };
+
+export interface Me {
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+}
 
 /**
  * Singleton wrapper for Directus SDK
@@ -15,19 +24,25 @@ import {
 export class DirectusClient {
   private static instance: DirectusClient;
 
-  // We keep REST + Auth, and we add GraphQL
   public sdk: ReturnType<typeof createDirectus<Schema>> &
-      AuthenticationClient<Schema> &
-      GraphqlClient<Schema>; // .query() is added by graphql()
+    AuthenticationClient<Schema> &
+    RestClient<Schema>;
+
+  // Coalesces concurrent refresh() calls so we only consume one refresh token
+  // per round-trip — Directus rotates tokens, so parallel refreshes race and
+  // the loser gets 401.
+  private refreshPromise: Promise<AuthenticationData> | null = null;
 
   private constructor() {
-    this.sdk = createDirectus<Schema>('http://localhost:8055')
-        // Authentication handles login/logout/refresh + token storage
-        .with(authentication('cookie', { credentials: 'include' }))
-        // Enable GraphQL queries, making sure cookies are sent
-        .with(graphql({ credentials: 'include' }))
-        // Keep REST while migrating gradually
-        .with(rest({ credentials: 'include' }));
+    const url = import.meta.env.VITE_DIRECTUS_URL;
+    if (!url) {
+      throw new Error(
+        "VITE_DIRECTUS_URL is not set. Copy .env.example to .env and restart the dev server.",
+      );
+    }
+    this.sdk = createDirectus<Schema>(url)
+      .with(authentication("cookie", { credentials: "include" }))
+      .with(rest({ credentials: "include" }));
   }
 
   /**
@@ -40,9 +55,6 @@ export class DirectusClient {
     return DirectusClient.instance;
   }
 
-  /**
-   * Perform user login with email/password
-   */
   async login(email: string, password: string): Promise<AuthenticationData> {
     return await this.sdk.login(
       { email, password },
@@ -52,18 +64,22 @@ export class DirectusClient {
     );
   }
 
-  /**
-   * Logout the current user
-   */
   async logout(): Promise<void> {
     await this.sdk.logout({
       mode: "cookie",
     });
   }
 
-  /**
-   * Get current token (if available)
-   */
+  async refresh(): Promise<AuthenticationData> {
+    if (this.refreshPromise) return this.refreshPromise;
+    this.refreshPromise = this.sdk.refresh({ mode: "cookie" });
+    try {
+      return await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
   async getToken(): Promise<string | null> {
     return await this.sdk.getToken();
   }
@@ -72,43 +88,13 @@ export class DirectusClient {
     await this.sdk.setToken(token);
   }
 
-  /**
-   * Get all plants
-   */
   async getPlants(): Promise<Plant[]> {
-    return await this.sdk.request(readItems<Plant>("plant"));
+    return await this.sdk.request(readItems("plant"));
   }
-  /**
-   * GraphQL equivalent of getPlants (with basic args)
-   */
-  async getPlantGraphQL(options?: { limit?: number; sort?: string[]; filter?: Record<string, unknown>; fields?: string[]; }): Promise<Plant[]> {
-    // NOTE: Keep the query explicit and typed; Directus GraphQL mirrors your collections
-    //       Here the collection is `plant` (not `plants`) because your collection name is singular.
-    //       If ta collection s'appelle `plants`, remplace par `plants`.
-    const query = /* GraphQL */ `
-      query GetPlant($limit: Int, $sort: [String!], $filter: plant_filter) {
-        plant(limit: $limit, sort: $sort, filter: $filter) {
-          id
-          name
-        }
-      }
-    `;
 
-    // IMPORTANT: GraphQL variables must match the query signature
-    const variables = {
-      limit: options?.limit ?? 50,
-      sort: options?.sort,
-      filter: options?.filter,
-      // You can’t pass dynamic "fields" as variables in GraphQL; selection set is static.
-      // If you want dynamic fields, compose the `query` string conditionally before calling .query().
-    };
-
-    // Call the SDK .query(); it posts to /graphql avec cookies (thanks to graphql({ credentials: 'include' }))
-    // The return shape is { data: { plant: Plant[] } }.
-    const result = await this.sdk.query<{ plant: Plant[] }>(query, variables);
-
-    // Defensive: some SDK versions return the `data` wrapper, others may unwrap.
-    const data = (result as any)?.data ?? result;
-    return data?.plant ?? [];
+  async getMe(): Promise<Me> {
+    return await this.sdk.request(
+      readMe({ fields: ["email", "first_name", "last_name"] }),
+    );
   }
 }

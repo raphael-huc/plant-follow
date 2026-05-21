@@ -1,112 +1,131 @@
-"use client";
-
-import { MouseEventHandler, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { DirectusClient } from "../api/directus"; // pour Vite/React Router
+import { RefreshCw } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
+
+const IS_DEV = import.meta.env.VITE_MODE === "dev";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+const SHOW_ADMIN_LOGIN = IS_DEV && !!ADMIN_EMAIL && !!ADMIN_PASSWORD;
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { status, login } = useAuth();
+  const [email, setEmail] = useState(IS_DEV ? (ADMIN_EMAIL ?? "") : "");
+  const [password, setPassword] = useState(
+    IS_DEV ? (ADMIN_PASSWORD ?? "") : "",
+  );
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const navigate = useNavigate();
 
-  const handleLoginAsAdmin = async (event: MouseEventHandler) => {
+  useEffect(() => {
+    if (status === "authenticated") {
+      navigate("/home", { replace: true });
+    }
+  }, [status, navigate]);
+
+  const attemptLogin = async (creds: { email: string; password: string }) => {
     setError(null);
-    setLoading(true);
-
+    setSubmitting(true);
     try {
-      // login
-      const directus = DirectusClient.getInstance();
-      await directus.login("admin@example.com", "d1r3ctu5");
-
-      console.log("Successfully logged in!");
-      navigate("/home");
+      await login(creds.email, creds.password);
+      navigate("/home", { replace: true });
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Login failed");
-      }
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      // login
-      const directus = DirectusClient.getInstance();
-      await directus.login(email, password);
-
-      navigate("/home");
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Login failed");
-      }
-    } finally {
-      setLoading(false);
-    }
+    attemptLogin({ email, password });
   };
+
+  const handleLoginAsAdmin = () => {
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) return;
+    attemptLogin({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+  };
+
+  if (status === "loading" || status === "authenticated") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-stone-50">
+        <RefreshCw
+          className="h-5 w-5 animate-spin text-stone-400"
+          aria-hidden="true"
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-white shadow-md rounded-xl p-6">
-        <h1 className="text-2xl font-semibold text-center mb-6 text-gray-800">
+    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
+      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-md">
+        <h1 className="mb-6 text-center text-2xl font-semibold text-stone-800">
           Huc House Login
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="email"
+              className="mb-1 block text-sm font-medium text-stone-700"
+            >
               Email
             </label>
             <input
+              id="email"
+              name="email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              disabled={submitting}
+              className="w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:outline-none focus:ring focus:ring-emerald-200 disabled:opacity-50"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="password"
+              className="mb-1 block text-sm font-medium text-stone-700"
+            >
               Password
             </label>
             <input
+              id="password"
+              name="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              disabled={submitting}
+              className="w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:outline-none focus:ring focus:ring-emerald-200 disabled:opacity-50"
             />
           </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50"
+            disabled={submitting}
+            className="w-full rounded-md bg-emerald-600 px-4 py-2 font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
           >
-            {loading ? "Logging in..." : "Login"}
+            {submitting ? "Logging in..." : "Login"}
           </button>
 
-          <button
-            onClick={handleLoginAsAdmin}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50"
-          >
-            {loading ? "Logging in..." : "Login as Admin"}
-          </button>
+          {SHOW_ADMIN_LOGIN && (
+            <button
+              type="button"
+              onClick={handleLoginAsAdmin}
+              disabled={submitting}
+              className="w-full rounded-md border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 transition hover:bg-stone-50 disabled:opacity-50"
+            >
+              {submitting ? "Logging in..." : "Login as Admin (dev)"}
+            </button>
+          )}
         </form>
       </div>
     </div>

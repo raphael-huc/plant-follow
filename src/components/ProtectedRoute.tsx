@@ -1,37 +1,27 @@
-import { JSX, useEffect, useState } from "react";
+import { JSX } from "react";
 import { Navigate } from "react-router-dom";
-import { DirectusClient } from "../api/directus";
+import { RefreshCw } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 interface ProtectedRouteProps {
   children: JSX.Element;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const { status } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const directus = DirectusClient.getInstance();
-      await directus.sdk
-        .refresh()
-        .then((response) => {
-          setAuthorized(true);
-        })
-        .catch(() => {
-          setAuthorized(false);
-        });
-    };
-
-    checkAuth();
-  }, []);
-
-  // Tant que le token est en cours de vérification
-  if (authorized === null) {
-    return <div>Checking auth...</div>;
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-stone-50">
+        <RefreshCw
+          className="h-5 w-5 animate-spin text-stone-400"
+          aria-hidden="true"
+        />
+      </div>
+    );
   }
 
-  // Redirection vers la page de login si pas autorisé
-  if (!authorized) {
+  if (status === "unauthenticated") {
     return <Navigate to="/" replace />;
   }
 
