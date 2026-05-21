@@ -1,15 +1,8 @@
 import "./App.css";
 import { Home } from "./pages/home.tsx";
-import Login from "./pages/login.js";
+import Login from "./pages/login.tsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { ProtectedRoute } from "./components/ProtectedRoute.js";
-import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
-
-// Initialize Apollo Client
-const client = new ApolloClient({
-  uri: "http://localhost:8055/graphql",
-  cache: new InMemoryCache(),
-});
+import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
 const router = createBrowserRouter([
   {
@@ -27,13 +20,7 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return (
-    <ApolloProvider client={client}>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <RouterProvider router={router} />
-      </div>
-    </ApolloProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

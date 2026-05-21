@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(where gh *)",
-      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" --version)"
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" --version)",
+      "Bash(pnpm remove *)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm lint *)",
+      "Bash(echo \"---LINT EXIT:$?---\")",
+      "Bash(pnpm build *)",
+      "Bash(echo \"---BUILD EXIT:$?---\")"
     ]
   }
 }

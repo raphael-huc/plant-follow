@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { DirectusClient, Plant } from "../api/directus";
 import { useNavigate } from "react-router-dom";
-import {gql} from "@apollo/client";
 
 export function Home() {
   const [plants, setPlants] = useState<Plant[] | null>(null);
